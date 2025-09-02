@@ -10,7 +10,7 @@
     "noEmit": true,
     "resolveJsonModule": true,
     "baseUrl": ".",
-    "types": ["vite/client", "node"],
+    "types": [],
     "paths": {
       "@/*": ["client/src/*"],
       "@shared/*": ["shared/*"]

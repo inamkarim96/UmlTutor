@@ -12,6 +12,7 @@
       "@/*": ["client/src/*"],
       "@shared/*": ["shared/*"]
     },
+    "types": ["node"],
     "strict": true,
     "skipLibCheck": true
   },
