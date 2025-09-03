@@ -5,7 +5,9 @@ declare global {
   namespace Express {
     interface User {
       userId: string;
-      role: "student" | "teacher" | "admin"; // Add more roles if needed
+      email?: string;
+      role?: "student" | "teacher" | "admin";
+      firebaseUid?: string;
     }
 
     interface Request {

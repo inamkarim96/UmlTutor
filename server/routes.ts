@@ -9,6 +9,7 @@ import {
 } from "../shared/schema.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { firebaseAuth } from "./firebase.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "umtutor-secret-key";
 
@@ -22,27 +23,43 @@ interface AuthenticatedRequest extends Request {
   user?: AuthenticatedUser;
 }
 
-const authenticateToken = (
+const authenticateToken = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Response | void => {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
+): Promise<Response | void> => {
+  try {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
 
-  if (!token) return res.status(401).json({ message: "Access token required" });
+    if (!token) {
+      return res.status(401).json({ message: "Access token required" });
+    }
 
-  jwt.verify(token, JWT_SECRET, (err, user: any) => {
-    if (err) return res.status(403).json({ message: "Invalid token" });
+    try {
+      const decoded = await firebaseAuth.verifyIdToken(token);
+      (req as AuthenticatedRequest).user = {
+        userId: decoded.uid,
+        email: decoded.email || "",
+        role: (decoded as any).role || "student"
+      };
+      return next();
+    } catch {}
 
-    (req as AuthenticatedRequest).user = {
-      userId: String(user.userId),
-      email: user.email,
-      role: user.role
-    };
+    return jwt.verify(token, JWT_SECRET, (err, user: any) => {
+      if (err) return res.status(403).json({ message: "Invalid token" });
 
-    next();
-  });
+      (req as AuthenticatedRequest).user = {
+        userId: String(user.userId),
+        email: user.email,
+        role: user.role
+      };
+
+      next();
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Auth verification failed" });
+  }
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
