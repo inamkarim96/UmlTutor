@@ -6,10 +6,11 @@ import {
   insertDiagramSchema,
   insertTutorialSessionSchema,
   insertConsistencyCheckSchema
-} from "../shared/schema.js";
+} from "@shared/schema";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { firebaseAuth } from "./firebase.js";
+import validator from "validator"; // ✅ add validator for email checks
 
 const JWT_SECRET = process.env.JWT_SECRET || "umtutor-secret-key";
 
@@ -63,15 +64,40 @@ const authenticateToken = async (
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // ✅ Registration with stronger validation
   app.post("/api/auth/register", async (req, res) => {
     try {
+      const { email, password, name, role } = req.body;
+
+      // Extra validation before schema parsing
+      if (!validator.isEmail(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+      if (!password || password.length < 6) {
+        return res
+          .status(400)
+          .json({ message: "Password must be at least 6 characters" });
+      }
+      if (!name) {
+        return res.status(400).json({ message: "Name is required" });
+      }
+      if (!["student", "teacher", "admin"].includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+
+      // Validate with Zod schema
       const userData = insertUserSchema.parse(req.body);
+
       const existingUser = await storage.getUserByEmail(userData.email);
-      if (existingUser)
+      if (existingUser) {
         return res.status(400).json({ message: "User already exists" });
+      }
 
       const hashedPassword = await bcrypt.hash(userData.password, 10);
-      const user = await storage.createUser({ ...userData, password: hashedPassword });
+      const user = await storage.createUser({
+        ...userData,
+        password: hashedPassword
+      });
 
       const token = jwt.sign(
         { userId: user.id, email: user.email, role: user.role },
@@ -94,6 +120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ✅ Login route
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
@@ -122,6 +149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ✅ Profile route
   app.get("/api/user/profile", authenticateToken, async (req: Request, res) => {
     try {
       const userId = Number((req as AuthenticatedRequest).user!.userId);
@@ -136,6 +164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   return httpServer;
 }
+
 
 async function runConsistencyCheck(diagram: any) {
   const issues = [];
