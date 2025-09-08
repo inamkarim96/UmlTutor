@@ -1,12 +1,21 @@
 "use client";
 
-import dynamic from "next/dynamic";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation"; 
+import { LoginForm } from "@/components/auth/LoginForm";
+import { useAuth } from "@/hooks/useAuth";
 
-const LoginForm = dynamic(() =>
-  import("@/components/auth/LoginForm").then((m) => m.LoginForm),
-  { ssr: false }
-);
+export default function Login() {
+  const { isAuthenticated } = useAuth();
+  const router = useRouter();
 
-export default function LoginPage() {
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [isAuthenticated, router]);
+
+  if (isAuthenticated) return null;
+
   return <LoginForm />;
 }

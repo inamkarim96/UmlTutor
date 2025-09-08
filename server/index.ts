@@ -3,11 +3,38 @@ import { registerRoutes } from "./routes.js";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+import session from "express-session";
 
 const app = express();
+
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+  })
+);
+
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
 
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "super-secret", // put in .env
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: false, // set true in production with HTTPS
+      sameSite: "lax",
+    },
+  })
+);
+
+//  Request logger (kept from your code)
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -41,6 +68,7 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
+  // Error handler
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -49,7 +77,7 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // Serve static client in production (built assets expected in dist/public)
+  //Serve static client in production
   if (process.env.NODE_ENV === "production") {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
@@ -62,11 +90,9 @@ app.use((req, res, next) => {
     }
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
+  // Always serve the API on port 5000
   const port = 5000;
   server.listen(port, "0.0.0.0", () => {
-    console.log(`serving on port ${port}`);
+    console.log(` Backend running on http://localhost:${port}`);
   });
 })();

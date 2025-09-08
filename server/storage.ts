@@ -12,6 +12,7 @@ import type {
   Notification,
   InsertNotification
 } from "../shared/schema.js";
+import { PrismaStorage } from "./storage.prisma.js";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -223,4 +224,4 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new PrismaStorage();
