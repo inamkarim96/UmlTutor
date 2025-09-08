@@ -1,9 +1,6 @@
 @import "tailwindcss";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
-
+/* CSS variables for colors/fonts consumed by Tailwind v4 @theme */
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -26,5 +23,4 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
